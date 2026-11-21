@@ -1,49 +1,55 @@
 # Containerized Full-Stack Application Deployment Using Docker and Docker Compose
 
-A hands-on DevOps project to build, containerize, and deploy a full-stack application on **AWS EC2 (Amazon Linux 2023)** using Docker and Docker Compose.
+A full-stack task manager built with React, Node.js/Express, and MongoDB, containerized with Docker and orchestrated using Docker Compose.
 
-> **Project status:** In progress. The repository is initialized; application code and deployment configuration will be added as each implementation step is completed and verified.
-
-## Planned architecture
+## Architecture
 
 ```text
 Browser
-   |
-   v
-React Frontend (Nginx)
-   |
-   v
-Node.js + Express REST API
-   |
-   v
-MongoDB
+  |
+  | http://EC2_PUBLIC_IP:3000
+  v
+Frontend container (Nginx + React)
+  |
+  | /api/* reverse proxy
+  v
+Backend container (Node.js + Express :5000)
+  |
+  v
+MongoDB container (:27017)
+  |
+  v
+Named Docker volume (mongodb_data)
 ```
 
-Docker Compose will manage the frontend, backend, and database containers on a dedicated Docker network. MongoDB data will be stored in a persistent Docker volume.
+All containers communicate over the private `app-network`. Only the frontend port is published to the host by default; Nginx proxies API requests to the backend. MongoDB data persists in a named volume.
 
 ## Technology stack
 
-- React — frontend
-- Node.js and Express — backend API
-- MongoDB — database
-- Nginx — frontend web server
-- Docker — containerization
-- Docker Compose — multi-container orchestration
-- AWS EC2, Amazon Linux 2023 — deployment environment
+- React 19 + Vite
+- Node.js 22 + Express 5
+- MongoDB 7 + Mongoose
+- Nginx
+- Docker Engine and Docker Compose
+- Target deployment: AWS EC2 with Amazon Linux 2023
 
-## Planned repository structure
+## Repository structure
 
 ```text
-fullstack-docker-compose-deployment/
-├── frontend/
-│   ├── src/
-│   ├── public/
+.
+├── backend/
+│   ├── models/Task.js
+│   ├── routes/tasks.js
+│   ├── server.js
 │   ├── package.json
 │   └── Dockerfile
-├── backend/
-│   ├── routes/
-│   ├── config/
-│   ├── server.js
+├── frontend/
+│   ├── src/App.jsx
+│   ├── src/main.jsx
+│   ├── src/style.css
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── nginx.conf
 │   ├── package.json
 │   └── Dockerfile
 ├── docker-compose.yml
@@ -52,26 +58,81 @@ fullstack-docker-compose-deployment/
 └── README.md
 ```
 
-## Implementation plan
+## Run locally or on an EC2 host
 
-- [ ] Prepare AWS EC2 with Amazon Linux 2023
-- [ ] Install and verify Docker Engine
-- [ ] Install and verify Docker Compose
-- [ ] Build the React frontend
-- [ ] Build the Node.js/Express backend
-- [ ] Configure MongoDB and persistent storage
-- [ ] Create Dockerfiles and Docker Compose configuration
-- [ ] Build and run the complete application
-- [ ] Test frontend, API, database connectivity, and persistence
-- [ ] Deploy and verify the application on EC2
-- [ ] Add deployment screenshots and final documentation
+1. Install Docker Engine and the Docker Compose plugin.
+2. Clone the repository:
 
-## Getting started
+   ```bash
+   git clone https://github.com/cloudvenky/fullstack-docker-compose-deployment.git
+   cd fullstack-docker-compose-deployment
+   ```
 
-Implementation instructions and verified commands will be added to this README as the project progresses.
+3. Create your local environment file:
 
-## Security
+   ```bash
+   cp .env.example .env
+   ```
 
-- Do not commit real passwords, API keys, AWS credentials, private keys, or production environment files.
-- Keep local environment files such as `.env` out of Git.
-- Use security-group rules that expose only the ports required for the deployment.
+4. Edit `.env` and set a strong local MongoDB password. Do not commit `.env`.
+5. Build and start the services:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+6. Check the containers and logs:
+
+   ```bash
+   docker compose ps
+   docker compose logs -f
+   ```
+
+7. Open `http://localhost:3000` (or `http://EC2_PUBLIC_IP:3000` on EC2).
+
+## API endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/health` | Backend and database status |
+| GET | `/api/tasks` | List tasks |
+| POST | `/api/tasks` | Create a task; JSON body: `{"title":"Learn Docker"}` |
+| PATCH | `/api/tasks/:id` | Update completion; JSON body: `{"completed":true}` |
+| DELETE | `/api/tasks/:id` | Delete a task |
+
+The API is reached through the frontend's Nginx reverse proxy, so browser requests use the same origin.
+
+## Useful Docker commands
+
+```bash
+docker compose ps
+docker compose logs -f frontend
+docker compose logs -f backend
+docker compose logs -f mongodb
+docker compose down
+```
+
+To remove containers and the persistent database volume (this permanently deletes stored tasks):
+
+```bash
+docker compose down -v
+```
+
+## Security notes
+
+- Never commit `.env`, AWS credentials, SSH private keys, or real passwords.
+- The backend and MongoDB ports are not published to the EC2 host by default.
+- For EC2, allow inbound TCP 3000 only from the intended client IP range while testing; restrict SSH (22) to your own IP.
+- For production, use HTTPS, a strong secret-management approach, and a reverse proxy or load balancer on standard web ports.
+
+## Project status
+
+- [x] React frontend and task manager UI
+- [x] Node.js/Express REST API
+- [x] MongoDB model and connection
+- [x] Frontend and backend Dockerfiles
+- [x] Nginx API reverse proxy
+- [x] Docker Compose services, network, health check, and persistent volume
+- [ ] Build and test containers on the target EC2 instance
+- [ ] Verify database persistence and deployment
+- [ ] Add real deployment screenshots
