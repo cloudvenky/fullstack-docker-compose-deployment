@@ -1,0 +1,15 @@
+{
+  "name": "fullstack-docker-compose-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Express API for the Docker Compose full-stack application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongoose": "^8.18.0"
+  }
+}
